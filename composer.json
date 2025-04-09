@@ -1,0 +1,12 @@
+{
+    "name": "root/html",
+    "description": "test-proj",
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "require": {
+        "nikic/fast-route": "^1.3"
+    }
+}

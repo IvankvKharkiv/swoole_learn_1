@@ -1,0 +1,8 @@
+services:
+  swoole:
+    build: .
+    ports:
+      - "9501:9501"
+    volumes:
+      - .:/var/www/html
+    restart: always
