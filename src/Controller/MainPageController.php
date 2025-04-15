@@ -2,19 +2,23 @@
 
 namespace App\Controller;
 
-use App\Request;
+use Swoole\Http\Request;
+use Swoole\Http\Response;
 
-class MainPageController
+class MainPageController implements ControllerInterface
 {
-    public function invoke(Request $request): string {
-        return json_encode([
-            'status' => 200,
-            'message' => 'Hello world!',
-            'vars' => [
-                '$_GET' => $request->getSwooleRequest()->get,
-                '$_POST' => $request->getPostData(),
-            ],
-        ]);
+    public function invoke(Request $request, Response $response): Response {
+        $loader = new \Twig\Loader\FilesystemLoader('./templates');
+        $twig = new \Twig\Environment($loader);
+
+        $response->setHeader('Content-Type', 'text/html');
+
+        $response->write($twig->render('demo.html.twig', [
+            'page_title' => 'Welcome to My Awesome Site',
+            'page_description' => 'This is a simple example using Tailwind CSS and Twig.'
+        ]));
+
+        return $response;
     }
 
 }

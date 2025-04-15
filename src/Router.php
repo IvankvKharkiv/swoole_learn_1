@@ -2,81 +2,95 @@
 
 namespace App;
 
+//require_once __DIR__ . '/Controller/MainPageController.php';
+
+use App\Controller\ControllerInterface;
 use App\Controller\MainPageController;
-use App\Request as AppRequest;
 use FastRoute\RouteCollector;
 use FastRoute;
 
 use Swoole\Http\Request;
-
+use Swoole\Http\Response;
 
 
 class Router
 {
-    private function get_index_handler(AppRequest $request): string
-    {
-        $controller = new MainPageController();
-        return $controller->invoke($request);
-    }
-
-    private function post_index_handler(array $vars): string
-    {
-        return json_encode([
-            'status' => 200,
-            'message' => 'Hello world!',
-            'vars' => [
-                '$_GET' => $vars['request']->get ?? [],
-                '$_POST' => $vars['post'],
-            ],
-        ]);
-    }
-
+    private array $controllerArray;
     private $dispatcher;
 
     public function __construct()
     {
         $this->dispatcher = FastRoute\simpleDispatcher(function (RouteCollector $r) {
-            $r->addRoute('GET', '/index', 'get_index_handler');
-            $r->addRoute('POST', '/index', 'post_index_handler');
+            $r->addRoute('GET', '/index', MainPageController::class);
+            $r->addRoute('POST', '/index', MainPageController::class);
         });
+
+        $files = glob(__DIR__ . '/Controller' . '/*.php');
+
+        foreach ($files as $file) {
+            require_once $file;
+        }
+
+        $this->controllerArray = [];
+
+        foreach (get_declared_classes() as $className) {
+            if (in_array(ControllerInterface::class, class_implements($className))) {
+                $this->controllerArray[] = $className;
+            }
+        }
     }
 
-    public function handleRequest(Request $request)
+    private function getControllerResponse(string $handler, Request $request, Response $response): Response
     {
-        list($code, $handler) = $this->dispatcher->dispatch($request->server['request_method'], $request->server['request_uri']);
+        foreach ($this->controllerArray as $class) {
+            if ($class === $handler) {
+                $controller = new $handler();
+                return $controller->invoke($request, $response);
+            }
+        }
 
-        $result = [
+        $response->setHeader('Content-Type', 'application/json');
+        $response->write(json_encode([
             'status' => 404,
-            'message' => 'Not Found',
+            'message' => 'Controller Not Found',
             'errors' => [
                 sprintf('The URI "%s" was not found', $request->server['request_uri'])
             ]
-        ];
+        ]));
+
+        return $response;
+    }
+
+    public function handleRequest(Request $request, Response $response): Response
+    {
+        list($code, $handler) = $this->dispatcher->dispatch($request->server['request_method'], $request->server['request_uri']);
 
         switch ($code) {
             case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
-                $result = [
+                $response->setHeader('Content-Type', 'application/json');
+                $response->write(json_encode([
                     'status' => 405,
                     'message' => 'Method Not Allowed',
                     'errors' => [
                         sprintf('Method "%s" is not allowed', $request->server['request_method'])
                     ]
-                ];
+                ]));
                 break;
             case FastRoute\Dispatcher::FOUND:
-                // form-data and x-www-form-urlencoded work out of the box so we handle JSON POST here
-                if ($request->server['request_method'] === 'POST' && $request->header['content-type'] === 'application/json') {
-                    $body = $request->rawContent();
-                    $post = empty($body) ? [] : json_decode($body);
-                } else {
-                    $post = $request->post ?? [];
-                }
-
-                $result = call_user_func([$this, $handler], new AppRequest($request, $post));
+                $response = $this->getControllerResponse($handler, $request, $response);
                 break;
+            default:
+                $response->setHeader('Content-Type', 'application/json');
+                $response->write(json_encode([
+                    'status' => 404,
+                    'message' => 'Not Found',
+                    'errors' => [
+                        sprintf('The URI "%s" was not found', $request->server['request_uri'])
+                    ]
+                ]));
         }
 
-        return $result;
+        return $response;
     }
 
 

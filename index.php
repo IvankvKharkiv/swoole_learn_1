@@ -5,8 +5,6 @@ require_once __DIR__ . '/vendor/autoload.php';
 use Swoole\Http\Server;
 use Swoole\Http\Request;
 use Swoole\Http\Response;
-
-use FastRoute\RouteCollector;
 use App\Router;
 
 $server = new Server("0.0.0.0", 9501, SWOOLE_PROCESS);
@@ -37,12 +35,9 @@ $server->on('request', function (Request $request, Response $response) use ($rou
         }
     });
 
-    // global content type for our responses
-    $response->header('Content-Type', 'application/json');
+    $response = $router->handleRequest($request, $response);
 
-    $result = $router->handleRequest($request);
-
-    $response->end($result);
+    $response->end();
 });
 
 $server->start();
