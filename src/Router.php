@@ -2,16 +2,12 @@
 
 namespace App;
 
-//require_once __DIR__ . '/Controller/MainPageController.php';
-
 use App\Controller\ControllerInterface;
 use App\Controller\MainPageController;
 use FastRoute\RouteCollector;
 use FastRoute;
-
 use Swoole\Http\Request;
 use Swoole\Http\Response;
-
 
 class Router
 {
@@ -25,7 +21,7 @@ class Router
             $r->addRoute('POST', '/index', MainPageController::class);
         });
 
-        $files = glob(__DIR__ . '/Controller' . '/*.php');
+        $files = glob(__DIR__.'/Controller/*.php');
 
         foreach ($files as $file) {
             require_once $file;
@@ -45,6 +41,7 @@ class Router
         foreach ($this->controllerArray as $class) {
             if ($class === $handler) {
                 $controller = new $handler();
+
                 return $controller->invoke($request, $response);
             }
         }
@@ -54,8 +51,8 @@ class Router
             'status' => 404,
             'message' => 'Controller Not Found',
             'errors' => [
-                sprintf('The URI "%s" was not found', $request->server['request_uri'])
-            ]
+                sprintf('The URI "%s" was not found', $request->server['request_uri']),
+            ],
         ]));
 
         return $response;
@@ -72,8 +69,8 @@ class Router
                     'status' => 405,
                     'message' => 'Method Not Allowed',
                     'errors' => [
-                        sprintf('Method "%s" is not allowed', $request->server['request_method'])
-                    ]
+                        sprintf('Method "%s" is not allowed', $request->server['request_method']),
+                    ],
                 ]));
                 break;
             case FastRoute\Dispatcher::FOUND:
@@ -85,13 +82,11 @@ class Router
                     'status' => 404,
                     'message' => 'Not Found',
                     'errors' => [
-                        sprintf('The URI "%s" was not found', $request->server['request_uri'])
-                    ]
+                        sprintf('The URI "%s" was not found', $request->server['request_uri']),
+                    ],
                 ]));
         }
 
         return $response;
     }
-
-
 }

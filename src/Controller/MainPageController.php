@@ -7,7 +7,8 @@ use Swoole\Http\Response;
 
 class MainPageController implements ControllerInterface
 {
-    public function invoke(Request $request, Response $response): Response {
+    public function invoke(Request $request, Response $response): Response
+    {
         $loader = new \Twig\Loader\FilesystemLoader('./templates');
         $twig = new \Twig\Environment($loader);
 
@@ -15,10 +16,9 @@ class MainPageController implements ControllerInterface
 
         $response->write($twig->render('demo.html.twig', [
             'page_title' => 'Welcome to My Awesome Site',
-            'page_description' => 'This is a simple example using Tailwind CSS and Twig.'
+            'page_description' => 'This is a simple example using Tailwind CSS and Twig.',
         ]));
 
         return $response;
     }
-
 }

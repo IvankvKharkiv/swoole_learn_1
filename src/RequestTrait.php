@@ -9,7 +9,7 @@ trait RequestTrait
     public function postBodyToArray(Request $request): array
     {
         // form-data and x-www-form-urlencoded work out of the box so we handle JSON POST here
-        if ($request->server['request_method'] === 'POST' && $request->header['content-type'] === 'application/json') {
+        if ('POST' === $request->server['request_method'] && 'application/json' === $request->header['content-type']) {
             $body = $request->rawContent();
             $post = empty($body) ? [] : json_decode($body);
         } else {
@@ -18,5 +18,4 @@ trait RequestTrait
 
         return $post;
     }
-
 }
